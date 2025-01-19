@@ -1,19 +1,24 @@
 import argparse
 import subprocess
-from common.config import get_dest_mac
+from common.config import get_dest_mac, get_pwd
 from common.requester import send_request
 
 def parse_arguments():
     parser = argparse.ArgumentParser(description="Shutdown task")
     parser.add_argument('-d', '--dest', required=True, choices=['1', '2'], help="destination (1 or 2)")
-    parser.add_argument('-p', '--passwd', required=True, help="password for authentication")
+    parser.add_argument('-p1', '--passwd1', required=True, help="password for authentication")
     args = parser.parse_args()
-    return args.dest, args.passwd
+    return args.dest, args.passwd1
 
 def main():
     # 명령줄 인자 파싱
-    dest, pwd = parse_arguments()
+    dest, pwd1 = parse_arguments()
     mac_address = get_dest_mac(dest);
+
+    # 비밀번호 일치 확인
+    if pwd1 != get_pwd():
+        print("Invalid password")
+        return
 
     # wol.py 실행: MAC 주소를 인자로 사용
     try:
