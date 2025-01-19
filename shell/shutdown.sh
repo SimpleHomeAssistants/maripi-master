@@ -1,7 +1,7 @@
 #!/bin/bash
 
-# 설정 파일로부터 값 읽기
-source ../settings.ini
+# 설정 파일을 읽어오도록 수정
+. ./settings.ini  # settings.ini 경로가 한 단계 위로 설정됨
 
 # 기본값 설정
 dest_url=""
@@ -9,9 +9,10 @@ passwd=""
 
 # 함수: dest URL을 선택하는 부분
 get_destination() {
-  if [ "$dest" == "dest1" ]; then
+  # dest 값에 따라 선택하는 방법
+  if [ "$dest" = "dest1" ]; then
     dest_url=$dest1_url
-  elif [ "$dest" == "dest2" ]; then
+  elif [ "$dest" = "dest2" ]; then
     dest_url=$dest2_url
   else
     echo "Invalid destination."
@@ -23,11 +24,11 @@ get_destination() {
 send_request() {
   # API 엔드포인트 URL에 추가할 path
   url="${dest_url}/${action}"
-  
+
   # POST 요청 보내기
   response=$(curl -s -o response.txt -w "%{http_code}" -X POST "$url" -H "Content-Type: application/json" -d "{\"passwd\": \"$passwd\"}")
-  
-  if [ "$response" == "200" ]; then
+
+  if [ "$response" = "200" ]; then
     echo "Request successful"
     cat response.txt
   else
