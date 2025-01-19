@@ -1,15 +1,38 @@
 #!/bin/bash
 
-# 설정 파일을 읽어오도록 수정
-. ./settings.ini  # settings.ini 경로가 한 단계 위로 설정됨
+# 설정 파일 경로
+SETTINGS_FILE="../settings.ini"
 
-# 기본값 설정
-dest_url=""
-passwd=""
+# 파일 경로가 올바른지 확인
+if [ ! -f "$SETTINGS_FILE" ]; then
+  echo "Error: 설정 파일을 찾을 수 없습니다."
+  exit 1
+fi
 
-# 함수: dest URL을 선택하는 부분
+# 설정 파일에서 값을 읽어오는 함수
+read_config() {
+  local key=$1
+  local section=$2
+  local value=$(sed -n "/\[$section\]/,/\[.*\]/p" "$SETTINGS_FILE" | grep -E "^$key=" | cut -d '=' -f2- | tr -d '[:space:]')
+  echo "$value"
+}
+
+# [DEFAULT] 섹션에서 값 읽기
+port=$(read_config "port" "DEFAULT")
+passwd=$(read_config "passwd" "DEFAULT")
+
+# [DESTINATION] 섹션에서 값 읽기
+dest1_url=$(read_config "dest1" "DESTINATION")
+dest2_url=$(read_config "dest2" "DESTINATION")
+
+# 확인
+echo "port: $port"
+echo "passwd: $passwd"
+echo "dest1_url: $dest1_url"
+echo "dest2_url: $dest2_url"
+
+# dest 확인 함수 (예시: dest1 또는 dest2로 처리)
 get_destination() {
-  # dest 값에 따라 선택하는 방법
   if [ "$dest" = "dest1" ]; then
     dest_url=$dest1_url
   elif [ "$dest" = "dest2" ]; then
@@ -20,52 +43,22 @@ get_destination() {
   fi
 }
 
-# 서버로 요청 보내기 (curl 사용)
-send_request() {
-  # API 엔드포인트 URL에 추가할 path
-  url="${dest_url}/${action}"
-
-  # POST 요청 보내기
-  response=$(curl -s -o response.txt -w "%{http_code}" -X POST "$url" -H "Content-Type: application/json" -d "{\"passwd\": \"$passwd\"}")
-
-  if [ "$response" = "200" ]; then
-    echo "Request successful"
-    cat response.txt
-  else
-    echo "Error: $response"
-    cat response.txt
-    exit 1
-  fi
-}
-
 # 인자 처리
 while getopts "d:p:a:" opt; do
   case $opt in
-    d)
-      dest=$OPTARG
-      ;;
-    p)
-      passwd=$OPTARG
-      ;;
-    a)
-      action=$OPTARG
-      ;;
-    \?)
-      echo "Usage: $0 -d dest -p passwd -a action"
-      exit 1
-      ;;
+    d) dest=$OPTARG ;;
+    p) passwd=$OPTARG ;;
+    a) action=$OPTARG ;;
+    \?) echo "Usage: $0 -d dest -p passwd -a action" ;;
   esac
 done
 
 # 필수 인자 확인
 if [ -z "$dest" ] || [ -z "$passwd" ] || [ -z "$action" ]; then
   echo "Error: Missing required arguments."
-  echo "Usage: $0 -d dest -p passwd -a action"
   exit 1
 fi
 
-# destination URL 결정
+# 서버 요청 전송
 get_destination
-
-# 서버 요청
-send_request
+echo "Requesting action: $action with password: $passwd to destination: $dest_url"
